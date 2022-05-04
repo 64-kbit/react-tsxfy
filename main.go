@@ -63,14 +63,15 @@ func RenameJsToTs() func(map[string]commando.ArgValue, map[string]commando.FlagV
 				_, _ = c.Println("file:", file)
 			}
 			newFile := strings.Replace(file.Path, ".jsx", ".tsx", 1)
-			newFile = strings.Replace(file.Path, ".js", ".tsx", 1)
+			newFile = strings.Replace(newFile, ".js", ".tsx", 1)
+			newFile = strings.Replace(newFile, ".react.", ".", 1)
 			if verbose {
 				c := color.New(color.FgGreen).Add(color.Bold).Add(color.Underline)
 				_, _ = c.Println("newFile:", newFile)
 			}
 			err := os.Rename(file.Path, newFile)
 			if err != nil {
-				c := color.New(color.FgRed).Add(color.Bold)
+				c := color.New(color.FgRed).Add(color.Bold).Add(color.Underline)
 				_, _ = c.Println("Error:", err)
 			}
 
