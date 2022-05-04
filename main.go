@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/thatisuday/commando"
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -25,10 +27,55 @@ func main() {
 		AddArgument("file", "Show file", ""). // required
 		AddFlag("verbose,V", "display log information ", commando.Bool, nil).
 		AddFlag("help,h", "display help information", commando.Bool, nil).
-		AddFlag("path,p", "Specify Path of File/Folder", commando.String, nil).
+		AddFlag("path,p", "Specify Path of File/Folder", commando.String, "./").
 		SetAction(PrintJsFiles())
+
+	commando.Register("rename").SetShortDescription("Renames JavaScript file to TypeScript file").
+		AddFlag("verbose,V", "display log information ", commando.Bool, nil).
+		AddFlag("help,h", "display help information", commando.Bool, nil).
+		AddFlag("path,p", "Specify Path of File/Folder", commando.String, "./").
+		SetAction(RenameJsToTs())
 	// parse command-line arguments from the STDIN
 	commando.Parse(nil)
+}
+
+func RenameJsToTs() func(map[string]commando.ArgValue, map[string]commando.FlagValue) {
+	return func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
+		path, err := flags["path"].GetString()
+		if err != nil {
+			panic(err)
+		}
+		verbose, _ := flags["verbose"].GetBool()
+		if verbose {
+			c := color.New(color.FgBlue).Add(color.Bold)
+			_, _ = c.Println("path:", path)
+
+		}
+		files := GetJavaScriptFiles(path)
+		if len(files) == 0 {
+			c := color.New(color.FgRed).Add(color.Bold)
+			_, _ = c.Println("No Files are Found on path:", path)
+			os.Exit(1)
+		}
+		for _, file := range files {
+			if verbose {
+				c := color.New(color.FgBlue).Add(color.Bold)
+				_, _ = c.Println("file:", file)
+			}
+			newFile := strings.Replace(file.Path, ".jsx", ".tsx", 1)
+			newFile = strings.Replace(file.Path, ".js", ".tsx", 1)
+			if verbose {
+				c := color.New(color.FgGreen).Add(color.Bold).Add(color.Underline)
+				_, _ = c.Println("newFile:", newFile)
+			}
+			err := os.Rename(file.Path, newFile)
+			if err != nil {
+				c := color.New(color.FgRed).Add(color.Bold)
+				_, _ = c.Println("Error:", err)
+			}
+
+		}
+	}
 }
 
 func ScanFilesInDir(dir string) []fs.FileInfo {
@@ -106,13 +153,17 @@ func ListDirectoryContents() func(map[string]commando.ArgValue, map[string]comma
 
 func PrintJsFiles() func(map[string]commando.ArgValue, map[string]commando.FlagValue) {
 	return func(args map[string]commando.ArgValue, flags map[string]commando.FlagValue) {
-		fmt.Println("Listing JavaScript Files contents...")
+
+		c := color.New(color.FgBlue).Add(color.Underline)
+		_, err := c.Println("Listing JavaScript Files contents...")
+		if err != nil {
+			return
+		}
 		dir, _ := flags["path"].GetString()
 		files := GetJavaScriptFiles(dir)
 		for _, file := range files {
-			fmt.Print(file.Path)
-			fmt.Print("Size: ", file.File.Size())
-			fmt.Println("\n")
+			fmt.Printf(file.Path)
+			fmt.Printf("Size: %d \n", file.File.Size())
 		}
 	}
 
